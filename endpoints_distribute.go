@@ -1,6 +1,9 @@
 package bac
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 const (
 	pathQueryFlow       = "/distribute/task/query-flow"
@@ -15,12 +18,38 @@ type QueryFlowRequest struct {
 	TaskDesc      string   `json:"taskDesc,omitempty"`
 }
 
-func (c *Client) QueryFlow(ctx context.Context, req *QueryFlowRequest) (RawObject, error) {
-	var resp RawObject
+type QueryFlowResponse struct {
+	TaskID FlexibleString `json:"taskId,omitempty"`
+	Items  []RawObject    `json:"items,omitempty"`
+	Raw    RawObject      `json:"-"`
+}
+
+func (r *QueryFlowResponse) UnmarshalJSON(data []byte) error {
+	var list []RawObject
+	if err := json.Unmarshal(data, &list); err == nil {
+		r.Items = list
+		if len(list) > 0 {
+			if taskID, ok := list[0]["taskId"]; ok {
+				_ = json.Unmarshal(taskID, &r.TaskID)
+			}
+		}
+		return nil
+	}
+	type alias QueryFlowResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = QueryFlowResponse(a)
+	return nil
+}
+
+func (c *Client) QueryFlow(ctx context.Context, req *QueryFlowRequest) (*QueryFlowResponse, error) {
+	var resp QueryFlowResponse
 	if err := c.Do(ctx, pathQueryFlow, req, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return &resp, nil
 }
 
 type QueryFlowResultRequest struct {

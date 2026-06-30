@@ -72,9 +72,11 @@ type RemoveDUFSSnapshotRequest struct {
 }
 
 type ListInstanceSnapshotsRequest struct {
-	InstanceCode string `json:"instanceCode,omitempty"`
-	Page         int    `json:"page,omitempty"`
-	Rows         int    `json:"rows,omitempty"`
+	SnapshotIDs    []FlexibleString `json:"snapshotIds,omitempty"`
+	SnapshotName   string           `json:"snapshotName,omitempty"`
+	SnapshotStatus string           `json:"snapshotStatus,omitempty"`
+	Page           int              `json:"page,omitempty"`
+	Rows           int              `json:"rows,omitempty"`
 }
 
 type SnapshotInfo struct {

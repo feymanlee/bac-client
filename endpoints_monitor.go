@@ -46,15 +46,51 @@ func (c *Client) GetMalfunctionStatistics(ctx context.Context, req *MalfunctionS
 	return resp, nil
 }
 
-type NetworkBandwidthListRequest struct {
+type NetworkBandwidthRequest struct {
 	IDCCode   string `json:"idcCode,omitempty"`
 	BeginTime string `json:"beginTime,omitempty"`
 	EndTime   string `json:"endTime,omitempty"`
 	StatUnit  string `json:"statUnit,omitempty"`
 }
 
-func (c *Client) ListNetworkBandwidth(ctx context.Context, req *NetworkBandwidthListRequest) (*Page[RawObject], error) {
-	var resp Page[RawObject]
+type NetworkBandwidthListRequest = NetworkBandwidthRequest
+
+type NetworkBandwidthStats struct {
+	Peek          FlexibleString          `json:"peek,omitempty"`
+	Peek95        FlexibleString          `json:"peek95,omitempty"`
+	Average       FlexibleString          `json:"average,omitempty"`
+	BandwidthList []NetworkBandwidthPoint `json:"bandwidthList,omitempty"`
+	Raw           RawObject               `json:"-"`
+}
+
+func (r *NetworkBandwidthStats) UnmarshalJSON(data []byte) error {
+	type alias NetworkBandwidthStats
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = NetworkBandwidthStats(a)
+	return nil
+}
+
+type NetworkBandwidthPoint struct {
+	RecordTime string         `json:"recordTime,omitempty"`
+	Bandwidth  FlexibleString `json:"bandwidth,omitempty"`
+	Raw        RawObject      `json:"-"`
+}
+
+func (r *NetworkBandwidthPoint) UnmarshalJSON(data []byte) error {
+	type alias NetworkBandwidthPoint
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = NetworkBandwidthPoint(a)
+	return nil
+}
+
+func (c *Client) ListNetworkBandwidth(ctx context.Context, req *NetworkBandwidthRequest) (*NetworkBandwidthStats, error) {
+	var resp NetworkBandwidthStats
 	if err := c.Do(ctx, pathNetworkBandwidthList, req, &resp); err != nil {
 		return nil, err
 	}
@@ -131,8 +167,6 @@ func (c *Client) QueryDeviceMonitorInfo(ctx context.Context, req *DeviceMonitorI
 
 type InstanceMonitorInfoRequest struct {
 	InstanceCodes []string `json:"instanceCodes,omitempty"`
-	StartTime     string   `json:"startTime,omitempty"`
-	EndTime       string   `json:"endTime,omitempty"`
 }
 
 type InstanceAppMonitorInfoRequest struct {
@@ -149,16 +183,37 @@ func (c *Client) GetInstanceMonitorInfo(ctx context.Context, req *InstanceMonito
 	return resp, nil
 }
 
-func (c *Client) GetInstanceAppMonitorInfo(ctx context.Context, req *InstanceAppMonitorInfoRequest) ([]RawObject, error) {
-	var resp []RawObject
+type InstanceAppMonitorInfo struct {
+	CPURateTopTen []RawObject `json:"cpuRateTopTen,omitempty"`
+	MemRateTopTen []RawObject `json:"memRateTopTen,omitempty"`
+	Raw           RawObject   `json:"-"`
+}
+
+func (r *InstanceAppMonitorInfo) UnmarshalJSON(data []byte) error {
+	type alias InstanceAppMonitorInfo
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = InstanceAppMonitorInfo(a)
+	return nil
+}
+
+func (c *Client) GetInstanceAppMonitorInfo(ctx context.Context, req *InstanceAppMonitorInfoRequest) (*InstanceAppMonitorInfo, error) {
+	var resp InstanceAppMonitorInfo
 	if err := c.Do(ctx, pathInstanceAppMonitorInfo, req, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return &resp, nil
 }
 
-func (c *Client) GetInstanceMetricDetail(ctx context.Context, req *InstanceMonitorInfoRequest) (RawObject, error) {
-	var resp RawObject
+type InstanceMetricDetailRequest struct {
+	InstanceCodes []string `json:"instanceCodes,omitempty"`
+	RecordTime    string   `json:"recordTime,omitempty"`
+}
+
+func (c *Client) GetInstanceMetricDetail(ctx context.Context, req *InstanceMetricDetailRequest) ([]RawObject, error) {
+	var resp []RawObject
 	if err := c.Do(ctx, pathInstanceMetricDetail, req, &resp); err != nil {
 		return nil, err
 	}

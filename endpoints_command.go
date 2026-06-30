@@ -29,7 +29,7 @@ type ScreenshotResponse struct {
 func (r *ScreenshotResponse) UnmarshalJSON(data []byte) error {
 	type alias ScreenshotResponse
 	var a alias
-	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+	if err := unmarshalRaw(data, &a.Raw, &a); err != nil {
 		return err
 	}
 	*r = ScreenshotResponse(a)
@@ -114,10 +114,10 @@ func (c *Client) GetTaskResult(ctx context.Context, req *GetTaskResultRequest) (
 }
 
 type ListTaskResultsRequest struct {
-	PageRequest
-	Rows   int            `json:"rows,omitempty"`
-	TaskID FlexibleString `json:"taskId,omitempty"`
-	Type   string         `json:"type,omitempty"`
+	Page     int              `json:"page,omitempty"`
+	Rows     int              `json:"rows,omitempty"`
+	TaskIDs  []FlexibleString `json:"taskIds,omitempty"`
+	TaskType string           `json:"taskType,omitempty"`
 }
 
 func (c *Client) ListTaskResults(ctx context.Context, req *ListTaskResultsRequest) (*Page[TaskResult], error) {
@@ -137,7 +137,7 @@ type TaskType struct {
 func (t *TaskType) UnmarshalJSON(data []byte) error {
 	type alias TaskType
 	var a alias
-	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+	if err := unmarshalRaw(data, &a.Raw, &a); err != nil {
 		return err
 	}
 	*t = TaskType(a)
@@ -152,18 +152,18 @@ func (c *Client) ListTaskTypes(ctx context.Context, req any) ([]TaskType, error)
 	return resp, nil
 }
 
-func (c *Client) CommandReboot(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+func (c *Client) CommandReboot(ctx context.Context, req *InstanceActionRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathCommandReboot, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
-func (c *Client) CommandReset(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+func (c *Client) CommandReset(ctx context.Context, req *InstanceActionRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathCommandReset, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }

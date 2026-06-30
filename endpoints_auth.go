@@ -1,6 +1,9 @@
 package bac
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 const (
 	pathCloudPhoneServerToken = "/auth/instance/cloud-phone-server-token"
@@ -14,7 +17,7 @@ const (
 type GetServerTokenRequest struct {
 	UUID          string   `json:"uuid,omitempty"`
 	InstanceCodes []string `json:"instanceCodes,omitempty"`
-	OnlineTime    int      `json:"onlineTime,omitempty"`
+	OnlineTime    int      `json:"onlineTime"`
 	GrantControl  string   `json:"grantControl,omitempty"`
 }
 
@@ -81,7 +84,7 @@ func (c *Client) GetServerToken(ctx context.Context, req *GetServerTokenRequest)
 type GetAuthorizedServerTokenRequest struct {
 	UUID         string `json:"uuid,omitempty"`
 	InstanceCode string `json:"instanceCode,omitempty"`
-	OnlineTime   int    `json:"onlineTime,omitempty"`
+	OnlineTime   int    `json:"onlineTime"`
 	GrantControl string `json:"grantControl,omitempty"`
 }
 
@@ -146,16 +149,20 @@ func (c *Client) DisconnectAllInstances(ctx context.Context, req *DisconnectAllI
 type AuthorizedConnectRequest struct {
 	UUID         string `json:"uuid,omitempty"`
 	InstanceCode string `json:"instanceCode,omitempty"`
-	OnlineTime   int    `json:"onlineTime,omitempty"`
+	OnlineTime   int    `json:"onlineTime"`
 	GrantControl string `json:"grantControl,omitempty"`
 }
 
 type AuthorizedConnectResponse struct {
-	URL         string         `json:"url,omitempty"`
-	ServerURL   string         `json:"serverUrl,omitempty"`
-	ServerToken string         `json:"serverToken,omitempty"`
-	ExpireTime  FlexibleString `json:"expireTime,omitempty"`
-	Raw         RawObject      `json:"-"`
+	ServerToken    string          `json:"serverToken,omitempty"`
+	InstanceCode   string          `json:"instanceCode,omitempty"`
+	StreamModeList []string        `json:"streamModeList,omitempty"`
+	SessionID      string          `json:"sessionId,omitempty"`
+	ConnData       json.RawMessage `json:"connData,omitempty"`
+	URL            string          `json:"url,omitempty"`
+	ServerURL      string          `json:"serverUrl,omitempty"`
+	ExpireTime     FlexibleString  `json:"expireTime,omitempty"`
+	Raw            RawObject       `json:"-"`
 }
 
 func (r *AuthorizedConnectResponse) UnmarshalJSON(data []byte) error {

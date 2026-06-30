@@ -35,6 +35,16 @@ func (s *FlexibleString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (s FlexibleString) MarshalJSON() ([]byte, error) {
+	if s == "" {
+		return []byte(`""`), nil
+	}
+	if _, err := strconv.ParseInt(string(s), 10, 64); err == nil {
+		return []byte(s), nil
+	}
+	return json.Marshal(string(s))
+}
+
 func (s FlexibleString) String() string {
 	return string(s)
 }
@@ -62,22 +72,36 @@ type Page[T any] struct {
 
 func (p *Page[T]) UnmarshalJSON(data []byte) error {
 	type alias Page[T]
-	var a alias
+	var a struct {
+		alias
+		PageDataLower []T `json:"pagedata,omitempty"`
+	}
 	if err := json.Unmarshal(data, &a); err != nil {
 		return err
 	}
-	*p = Page[T](a)
+	*p = Page[T](a.alias)
+	if len(p.PageData) == 0 && len(a.PageDataLower) > 0 {
+		p.PageData = a.PageDataLower
+	}
 	p.Raw = append(p.Raw[:0], data...)
 	return nil
 }
 
 type TaskResult struct {
-	TaskID FlexibleString  `json:"taskId,omitempty"`
-	Status FlexibleString  `json:"status,omitempty"`
-	Code   FlexibleString  `json:"code,omitempty"`
-	Msg    string          `json:"msg,omitempty"`
-	Data   json.RawMessage `json:"data,omitempty"`
-	Raw    json.RawMessage `json:"-"`
+	TaskID      FlexibleString  `json:"taskId,omitempty"`
+	PadCode     string          `json:"padCode,omitempty"`
+	TaskStatus  string          `json:"taskStatus,omitempty"`
+	TaskResult  string          `json:"taskResult,omitempty"`
+	TaskType    string          `json:"taskType,omitempty"`
+	CreateTime  FlexibleString  `json:"createTime,omitempty"`
+	ExecuteTime FlexibleString  `json:"executeTime,omitempty"`
+	DeviceIP    string          `json:"deviceIp,omitempty"`
+	URL         string          `json:"url,omitempty"`
+	Status      FlexibleString  `json:"status,omitempty"`
+	Code        FlexibleString  `json:"code,omitempty"`
+	Msg         string          `json:"msg,omitempty"`
+	Data        json.RawMessage `json:"data,omitempty"`
+	Raw         json.RawMessage `json:"-"`
 }
 
 func (r *TaskResult) UnmarshalJSON(data []byte) error {

@@ -5,11 +5,12 @@ import "context"
 const pathEmulationAuthCodePage = "/resources/emulation/auth-code-page"
 
 type ListEmulationAuthCodesRequest struct {
-	PageRequest
-	Rows         int            `json:"rows,omitempty"`
-	AuthCode     string         `json:"authCode,omitempty"`
-	InstanceCode string         `json:"instanceCode,omitempty"`
-	Status       FlexibleString `json:"status,omitempty"`
+	AuthCodes     []string `json:"authCodes,omitempty"`
+	AuthStatus    *int     `json:"authStatus,omitempty"`
+	InstanceCodes []string `json:"instanceCodes,omitempty"`
+	PackageName   string   `json:"packageName,omitempty"`
+	Page          int      `json:"page,omitempty"`
+	Rows          int      `json:"rows,omitempty"`
 }
 
 func (c *Client) ListEmulationAuthCodes(ctx context.Context, req *ListEmulationAuthCodesRequest) (*Page[RawObject], error) {

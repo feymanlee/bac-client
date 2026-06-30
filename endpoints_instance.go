@@ -108,13 +108,18 @@ type GetInstanceDeviceInfoRequest struct {
 }
 
 type DeviceInfo struct {
-	InstanceID string         `json:"instanceId,omitempty"`
-	AndroidID  string         `json:"androidId,omitempty"`
-	IMEI       string         `json:"imei,omitempty"`
-	IMSI       string         `json:"imsi,omitempty"`
-	Mac        string         `json:"mac,omitempty"`
-	Status     FlexibleString `json:"status,omitempty"`
-	Raw        RawObject      `json:"-"`
+	InstanceCode   string             `json:"instanceCode,omitempty"`
+	PadCode        string             `json:"padCode,omitempty"`
+	StorageSum     FlexibleString     `json:"storageSum,omitempty"`
+	StorageFree    FlexibleString     `json:"storageFree,omitempty"`
+	AppInstallList []DeviceAppInstall `json:"appInstallList,omitempty"`
+	InstanceID     string             `json:"instanceId,omitempty"`
+	AndroidID      string             `json:"androidId,omitempty"`
+	IMEI           string             `json:"imei,omitempty"`
+	IMSI           string             `json:"imsi,omitempty"`
+	Mac            string             `json:"mac,omitempty"`
+	Status         FlexibleString     `json:"status,omitempty"`
+	Raw            RawObject          `json:"-"`
 }
 
 func (d *DeviceInfo) UnmarshalJSON(data []byte) error {
@@ -124,6 +129,25 @@ func (d *DeviceInfo) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*d = DeviceInfo(a)
+	return nil
+}
+
+type DeviceAppInstall struct {
+	AppID       FlexibleString `json:"appId,omitempty"`
+	AppName     string         `json:"appName,omitempty"`
+	PackageName string         `json:"packageName,omitempty"`
+	VersionName string         `json:"versionName,omitempty"`
+	AppIconURL  string         `json:"appIconUrl,omitempty"`
+	Raw         RawObject      `json:"-"`
+}
+
+func (a *DeviceAppInstall) UnmarshalJSON(data []byte) error {
+	type alias DeviceAppInstall
+	var v alias
+	if err := unmarshalRaw(data, (*RawObject)(&v.Raw), &v); err != nil {
+		return err
+	}
+	*a = DeviceAppInstall(v)
 	return nil
 }
 
@@ -141,7 +165,7 @@ type UploadFileRequest struct {
 	FileName          string   `json:"fileName,omitempty"`
 	FileMD5           string   `json:"fileMd5,omitempty"`
 	CustomizeFilePath string   `json:"customizeFilePath,omitempty"`
-	AutoInstall       bool     `json:"autoInstall,omitempty"`
+	AutoInstall       int      `json:"autoInstall,omitempty"`
 }
 
 type InstanceFileUpload struct {
@@ -326,8 +350,28 @@ type SessionControlSwitchRequest struct {
 	WatchServerTokens   []string `json:"watchServerTokens,omitempty"`
 }
 
-func (c *Client) SwitchSessionControl(ctx context.Context, req *SessionControlSwitchRequest) error {
-	return c.Do(ctx, pathSessionControlSwitch, req, nil)
+type SessionControlSwitchFailure struct {
+	ServerToken string    `json:"serverToken,omitempty"`
+	ErrorMsg    string    `json:"errorMsg,omitempty"`
+	Raw         RawObject `json:"-"`
+}
+
+func (f *SessionControlSwitchFailure) UnmarshalJSON(data []byte) error {
+	type alias SessionControlSwitchFailure
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*f = SessionControlSwitchFailure(a)
+	return nil
+}
+
+func (c *Client) SwitchSessionControl(ctx context.Context, req *SessionControlSwitchRequest) ([]SessionControlSwitchFailure, error) {
+	var resp []SessionControlSwitchFailure
+	if err := c.Do(ctx, pathSessionControlSwitch, req, &resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 type SetResolutionRequest struct {
@@ -372,12 +416,12 @@ func (c *Client) UninstallApp(ctx context.Context, req *UninstallAppRequest) ([]
 	return resp, nil
 }
 
-func (c *Client) RebootInstance(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+func (c *Client) RebootInstance(ctx context.Context, req *InstanceActionRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathRebootRemotePlay, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
 type RebootDeviceRequest struct {
@@ -393,7 +437,7 @@ func (c *Client) RebootDevice(ctx context.Context, req *RebootDeviceRequest) ([]
 	return resp, nil
 }
 
-func (c *Client) ResetDevice(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
+func (c *Client) ResetDevice(ctx context.Context, req *InstanceActionRequest) ([]TaskResponse, error) {
 	return c.CommandReset(ctx, req)
 }
 
@@ -505,7 +549,7 @@ type DataCopyRequest struct {
 	DataCopyList []DataCopyItem `json:"dataCopyList,omitempty"`
 	Includes     []string       `json:"includes,omitempty"`
 	Excludes     []string       `json:"excludes,omitempty"`
-	Reset        bool           `json:"reset,omitempty"`
+	Reset        bool           `json:"reset"`
 }
 
 type DataCopyItem struct {
@@ -520,8 +564,25 @@ type DataCopyItem struct {
 	Manufacturer       string `json:"manufacturer,omitempty"`
 }
 
-func (c *Client) CopyInstanceData(ctx context.Context, req *DataCopyRequest) ([]TaskResponse, error) {
-	var resp []TaskResponse
+type DataCopyResponse struct {
+	SourceInstanceCode string         `json:"sourceInstanceCode,omitempty"`
+	TargetInstanceCode string         `json:"targetInstanceCode,omitempty"`
+	TaskID             FlexibleString `json:"taskId,omitempty"`
+	Raw                RawObject      `json:"-"`
+}
+
+func (r *DataCopyResponse) UnmarshalJSON(data []byte) error {
+	type alias DataCopyResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = DataCopyResponse(a)
+	return nil
+}
+
+func (c *Client) CopyInstanceData(ctx context.Context, req *DataCopyRequest) ([]DataCopyResponse, error) {
+	var resp []DataCopyResponse
 	if err := c.Do(ctx, pathDataCopy, req, &resp); err != nil {
 		return nil, err
 	}
@@ -593,7 +654,11 @@ func (c *Client) GetScreenshotURL(ctx context.Context, req *ScreenshotURLRequest
 	return &resp, nil
 }
 
-func (c *Client) DestroyScreenshotURL(ctx context.Context, req *ScreenshotURLRequest) error {
+type DestroyScreenshotURLRequest struct {
+	InstanceCode string `json:"instanceCode,omitempty"`
+}
+
+func (c *Client) DestroyScreenshotURL(ctx context.Context, req *DestroyScreenshotURLRequest) error {
 	return c.Do(ctx, pathDestroyScreenshotURL, req, nil)
 }
 
@@ -605,22 +670,69 @@ func (c *Client) StopEventTasks(ctx context.Context, req *StopEventTasksRequest)
 	return c.Do(ctx, pathEventTaskStop, req, nil)
 }
 
-type ExpireTimeRequest struct {
+type IncreaseExpireTimeRequest struct {
+	ServerTokens []string `json:"serverTokens,omitempty"`
+	Time         int      `json:"time"`
+}
+
+type UpdateExpireTimeRequest struct {
 	ServerTokens []string       `json:"serverTokens,omitempty"`
 	ExpireTime   FlexibleString `json:"expireTime,omitempty"`
-	Time         int            `json:"time,omitempty"`
 }
 
-func (c *Client) IncreaseExpireTime(ctx context.Context, req *ExpireTimeRequest) error {
-	return c.Do(ctx, pathExpireTimeIncrease, req, nil)
+type ExpireTimeResponse struct {
+	FailList []string  `json:"failList,omitempty"`
+	Raw      RawObject `json:"-"`
 }
 
-func (c *Client) UpdateExpireTime(ctx context.Context, req *ExpireTimeRequest) error {
-	return c.Do(ctx, pathExpireTimeUpdate, req, nil)
+func (r *ExpireTimeResponse) UnmarshalJSON(data []byte) error {
+	type alias ExpireTimeResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = ExpireTimeResponse(a)
+	return nil
 }
 
-func (c *Client) ExportIP(ctx context.Context, req *InstanceActionRequest) (RawObject, error) {
-	var resp RawObject
+func (c *Client) IncreaseExpireTime(ctx context.Context, req *IncreaseExpireTimeRequest) (*ExpireTimeResponse, error) {
+	var resp ExpireTimeResponse
+	if err := c.Do(ctx, pathExpireTimeIncrease, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateExpireTime(ctx context.Context, req *UpdateExpireTimeRequest) (*ExpireTimeResponse, error) {
+	var resp ExpireTimeResponse
+	if err := c.Do(ctx, pathExpireTimeUpdate, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+type ExportIPRequest struct {
+	InstanceCodes []string `json:"instanceCodes,omitempty"`
+}
+
+type ExportIPResult struct {
+	InstanceCode    string    `json:"instanceCode,omitempty"`
+	PublicIPAddress string    `json:"publicIpAddress,omitempty"`
+	Raw             RawObject `json:"-"`
+}
+
+func (r *ExportIPResult) UnmarshalJSON(data []byte) error {
+	type alias ExportIPResult
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = ExportIPResult(a)
+	return nil
+}
+
+func (c *Client) ExportIP(ctx context.Context, req *ExportIPRequest) ([]ExportIPResult, error) {
+	var resp []ExportIPResult
 	if err := c.Do(ctx, pathExportIP, req, &resp); err != nil {
 		return nil, err
 	}
@@ -629,7 +741,7 @@ func (c *Client) ExportIP(ctx context.Context, req *InstanceActionRequest) (RawO
 
 type MemoryLimitRequest struct {
 	InstanceCodes []string `json:"instanceCodes,omitempty"`
-	IsLimit       bool     `json:"isLimit,omitempty"`
+	IsLimit       bool     `json:"isLimit"`
 	MemoryLimit   int      `json:"memoryLimit,omitempty"`
 }
 
@@ -715,7 +827,7 @@ func (c *Client) GetSSHInfo(ctx context.Context, req *SSHInfoRequest) (*SSHInfoR
 
 type SummaryDataRequest struct {
 	MerchantPoolNo FlexibleString `json:"merchantPoolNo,omitempty"`
-	IncludeSubPool bool           `json:"includeSubPool,omitempty"`
+	IncludeSubPool bool           `json:"includeSubPool"`
 }
 
 func (c *Client) GetSummaryData(ctx context.Context, req *SummaryDataRequest) (RawObject, error) {
@@ -728,7 +840,7 @@ func (c *Client) GetSummaryData(ctx context.Context, req *SummaryDataRequest) (R
 
 type MaintainStatusRequest struct {
 	InstanceCodes  []string `json:"instanceCodes,omitempty"`
-	MaintainStatus int      `json:"maintainStatus,omitempty"`
+	MaintainStatus int      `json:"maintainStatus"`
 }
 
 func (c *Client) UpdateMaintainStatus(ctx context.Context, req *MaintainStatusRequest) error {

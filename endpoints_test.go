@@ -189,7 +189,7 @@ func TestUpdateDeviceImageUsesOfficialRequestAndResponseShape(t *testing.T) {
 	if _, ok := captured["imageId"]; ok {
 		t.Fatalf("unexpected imageId in request: %#v", captured)
 	}
-	if captured["configId"].(string) != "cfg-1" || captured["resourcePackageId"].(string) != "20002" {
+	if captured["configId"].(string) != "cfg-1" || captured["resourcePackageId"].(float64) != 20002 {
 		t.Fatalf("optional fields = %#v", captured)
 	}
 	if captured["reset"].(bool) != true || captured["autoInstall"].(bool) != false {
@@ -318,7 +318,7 @@ func TestOfficialRequestShapesForHighRiskEndpoints(t *testing.T) {
 					ConfigID:          "cfg",
 					ResourcePackageID: FlexibleString("7"),
 					Reset:             true,
-					AutoInstall:       true,
+					AutoInstall:       boolPtr(true),
 				})
 				return err
 			},
@@ -570,4 +570,8 @@ func forbidKeys(t *testing.T, body map[string]any, keys ...string) {
 			t.Fatalf("unexpected key %q in body %#v", key, body)
 		}
 	}
+}
+
+func boolPtr(v bool) *bool {
+	return &v
 }

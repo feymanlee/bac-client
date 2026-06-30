@@ -64,9 +64,13 @@ type InstanceTagRequest struct {
 }
 
 type InstanceTag struct {
-	TagID   FlexibleString `json:"tagId,omitempty"`
-	TagName string         `json:"tagName,omitempty"`
-	Raw     RawObject      `json:"-"`
+	TagID                FlexibleString `json:"tagId,omitempty"`
+	TagName              string         `json:"tagName,omitempty"`
+	RelatedInstanceCount FlexibleString `json:"relatedInstanceCount,omitempty"`
+	BelongToSubMerchant  FlexibleString `json:"belongToSubMerchant,omitempty"`
+	SubMerchantName      string         `json:"subMerchantName,omitempty"`
+	Remark               string         `json:"remark,omitempty"`
+	Raw                  RawObject      `json:"-"`
 }
 
 func (t *InstanceTag) UnmarshalJSON(data []byte) error {
@@ -87,8 +91,27 @@ func (c *Client) ListInstanceTags(ctx context.Context, req *InstanceTagRequest) 
 	return &resp, nil
 }
 
-func (c *Client) SaveInstanceTag(ctx context.Context, req *InstanceTagRequest) error {
-	return c.Do(ctx, pathSaveInstanceTag, req, nil)
+type SaveInstanceTagResponse struct {
+	TagID FlexibleString `json:"tagId,omitempty"`
+	Raw   RawObject      `json:"-"`
+}
+
+func (r *SaveInstanceTagResponse) UnmarshalJSON(data []byte) error {
+	type alias SaveInstanceTagResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = SaveInstanceTagResponse(a)
+	return nil
+}
+
+func (c *Client) SaveInstanceTag(ctx context.Context, req *InstanceTagRequest) (*SaveInstanceTagResponse, error) {
+	var resp SaveInstanceTagResponse
+	if err := c.Do(ctx, pathSaveInstanceTag, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 func (c *Client) UpdateInstanceTag(ctx context.Context, req *InstanceTagRequest) error {

@@ -21,18 +21,28 @@ type AlarmStrategyRequest struct {
 	AlarmMetrics         string         `json:"alarmMetrics,omitempty"`
 	AlarmThreshold       int            `json:"alarmThreshold,omitempty"`
 	AlarmSilencePeriod   int            `json:"alarmSilencePeriod,omitempty"`
-	SMSNotifyStatus      int            `json:"smsNotifyStatus,omitempty"`
+	SMSNotifyStatus      *int           `json:"smsNotifyStatus,omitempty"`
 	SMSNotifyObjects     []string       `json:"smsNotifyObjects,omitempty"`
-	CallbackNotifyStatus int            `json:"callbackNotifyStatus,omitempty"`
-	EnableStatus         int            `json:"enableStatus,omitempty"`
+	CallbackNotifyStatus *int           `json:"callbackNotifyStatus,omitempty"`
+	EnableStatus         *int           `json:"enableStatus,omitempty"`
 	Page                 int            `json:"page,omitempty"`
 	Rows                 int            `json:"rows,omitempty"`
 }
 
 type AlarmStrategy struct {
-	AlarmStrategyID   FlexibleString `json:"alarmStrategyId,omitempty"`
-	AlarmStrategyName string         `json:"alarmStrategyName,omitempty"`
-	Raw               RawObject      `json:"-"`
+	AlarmStrategyID      FlexibleString `json:"alarmStrategyId,omitempty"`
+	AlarmStrategyName    string         `json:"alarmStrategyName,omitempty"`
+	AlarmStrategyDesc    string         `json:"alarmStrategyDesc,omitempty"`
+	IDCNames             []string       `json:"idcNames,omitempty"`
+	AlarmResourceType    string         `json:"alarmResourceType,omitempty"`
+	AlarmMetrics         string         `json:"alarmMetrics,omitempty"`
+	AlarmThreshold       FlexibleString `json:"alarmThreshold,omitempty"`
+	AlarmSilencePeriod   FlexibleString `json:"alarmSilencePeriod,omitempty"`
+	SMSNotifyStatus      FlexibleString `json:"smsNotifyStatus,omitempty"`
+	CallbackNotifyStatus FlexibleString `json:"callbackNotifyStatus,omitempty"`
+	EnableStatus         FlexibleString `json:"enableStatus,omitempty"`
+	CreateTime           FlexibleString `json:"createTime,omitempty"`
+	Raw                  RawObject      `json:"-"`
 }
 
 func (a *AlarmStrategy) UnmarshalJSON(data []byte) error {
@@ -53,7 +63,11 @@ func (c *Client) UpdateAlarmStrategy(ctx context.Context, req *AlarmStrategyRequ
 	return c.Do(ctx, pathUpdateAlarmStrategy, req, nil)
 }
 
-func (c *Client) RemoveAlarmStrategy(ctx context.Context, req *AlarmStrategyRequest) error {
+type RemoveAlarmStrategyRequest struct {
+	AlarmStrategyIDs []FlexibleString `json:"alarmStrategyIds,omitempty"`
+}
+
+func (c *Client) RemoveAlarmStrategy(ctx context.Context, req *RemoveAlarmStrategyRequest) error {
 	return c.Do(ctx, pathRemoveAlarmStrategy, req, nil)
 }
 
@@ -65,7 +79,12 @@ func (c *Client) ListAlarmStrategies(ctx context.Context, req *AlarmStrategyRequ
 	return &resp, nil
 }
 
-func (c *Client) UpdateAlarmStrategyEnableStatus(ctx context.Context, req *AlarmStrategyRequest) error {
+type UpdateAlarmStrategyEnableStatusRequest struct {
+	AlarmStrategyIDs []FlexibleString `json:"alarmStrategyIds,omitempty"`
+	EnableStatus     int              `json:"enableStatus"`
+}
+
+func (c *Client) UpdateAlarmStrategyEnableStatus(ctx context.Context, req *UpdateAlarmStrategyEnableStatusRequest) error {
 	return c.Do(ctx, pathUpdateAlarmStrategyEnable, req, nil)
 }
 

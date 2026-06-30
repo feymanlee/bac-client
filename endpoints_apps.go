@@ -43,7 +43,7 @@ func (c *Client) DeleteApp(ctx context.Context, req *DeleteAppRequest) error {
 }
 
 type ListAppsRequest struct {
-	PageRequest
+	Page       int            `json:"page,omitempty"`
 	Rows       int            `json:"rows,omitempty"`
 	AppID      FlexibleString `json:"appId,omitempty"`
 	AppPackage string         `json:"appPackage,omitempty"`
@@ -86,12 +86,36 @@ type AppVersionRequest struct {
 	AppURL         string         `json:"appUrl,omitempty"`
 }
 
-func (c *Client) NewAppVersion(ctx context.Context, req *AppVersionRequest) error {
-	return c.Do(ctx, pathNewAppVersion, req, nil)
+type AppVersionResponse struct {
+	ApplicationVersionID FlexibleString `json:"applicationVersionId,omitempty"`
+	AppID                FlexibleString `json:"appId,omitempty"`
+	Raw                  RawObject      `json:"-"`
 }
 
-func (c *Client) UpgradeApp(ctx context.Context, req *AppVersionRequest) error {
-	return c.Do(ctx, pathUpgradeApp, req, nil)
+func (r *AppVersionResponse) UnmarshalJSON(data []byte) error {
+	type alias AppVersionResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = AppVersionResponse(a)
+	return nil
+}
+
+func (c *Client) NewAppVersion(ctx context.Context, req *AppVersionRequest) (*AppVersionResponse, error) {
+	var resp AppVersionResponse
+	if err := c.Do(ctx, pathNewAppVersion, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpgradeApp(ctx context.Context, req *AppVersionRequest) (*AppVersionResponse, error) {
+	var resp AppVersionResponse
+	if err := c.Do(ctx, pathUpgradeApp, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 type BuiltinAppRequest struct {
@@ -118,10 +142,10 @@ func (c *Client) BuiltinUninstallApp(ctx context.Context, req *BuiltinAppRequest
 type GetDesktopIconConfigRequest struct {
 	InstanceCodes []string         `json:"instanceCodes,omitempty"`
 	AppIDs        []FlexibleString `json:"appIds,omitempty"`
-	Container     int              `json:"container,omitempty"`
-	Screen        int              `json:"screen,omitempty"`
-	X             int              `json:"x,omitempty"`
-	Y             int              `json:"y,omitempty"`
+	Container     *int             `json:"container,omitempty"`
+	Screen        *int             `json:"screen,omitempty"`
+	X             *int             `json:"x,omitempty"`
+	Y             *int             `json:"y,omitempty"`
 }
 
 type SaveDesktopIconConfigRequest struct {

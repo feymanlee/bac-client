@@ -12,42 +12,80 @@ const (
 	pathImageRemove     = "/resources/instance-image/remove"
 )
 
-type ListImagesRequest struct {
-	PageRequest
-	Rows           int            `json:"rows,omitempty"`
-	ImageVersionID FlexibleString `json:"imageVersionId,omitempty"`
-	ImageID        string         `json:"imageId,omitempty"`
-	Name           string         `json:"name,omitempty"`
+type ListBaseImagesRequest struct {
+	Page               int              `json:"page,omitempty"`
+	Rows               int              `json:"rows,omitempty"`
+	InstanceServerType string           `json:"instanceServerType,omitempty"`
+	RomVersion         string           `json:"romVersion,omitempty"`
+	ImageVersionIDs    []FlexibleString `json:"imageVersionIds,omitempty"`
 }
 
-type ImageInfo struct {
-	ImageID string         `json:"imageId,omitempty"`
-	Name    string         `json:"name,omitempty"`
-	Version string         `json:"version,omitempty"`
-	Status  FlexibleString `json:"status,omitempty"`
-	Raw     RawObject      `json:"-"`
+type ListInstanceImagesRequest struct {
+	Page               int              `json:"page,omitempty"`
+	Rows               int              `json:"rows,omitempty"`
+	ImageVersionID     FlexibleString   `json:"imageVersionId,omitempty"`
+	ImageVersionIDs    []FlexibleString `json:"imageVersionIds,omitempty"`
+	InstanceServerType string           `json:"instanceServerType,omitempty"`
+	RomVersion         string           `json:"romVersion,omitempty"`
+	ImageVersionName   string           `json:"imageVersionName,omitempty"`
 }
 
-func (i *ImageInfo) UnmarshalJSON(data []byte) error {
-	type alias ImageInfo
+type ListImagesRequest = ListInstanceImagesRequest
+
+type BaseImageInfo struct {
+	ImageVersionID     FlexibleString `json:"imageVersionId,omitempty"`
+	ImageVersionName   string         `json:"imageVersionName,omitempty"`
+	InstanceServerType string         `json:"instanceServerType,omitempty"`
+	RomVersion         string         `json:"romVersion,omitempty"`
+	CreateTime         FlexibleString `json:"createTime,omitempty"`
+	Raw                RawObject      `json:"-"`
+}
+
+func (i *BaseImageInfo) UnmarshalJSON(data []byte) error {
+	type alias BaseImageInfo
 	var a alias
 	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
 		return err
 	}
-	*i = ImageInfo(a)
+	*i = BaseImageInfo(a)
 	return nil
 }
 
-func (c *Client) ListBaseImages(ctx context.Context, req *ListImagesRequest) (*Page[ImageInfo], error) {
-	var resp Page[ImageInfo]
+type InstanceImageInfo struct {
+	ImageVersionID     FlexibleString `json:"imageVersionId,omitempty"`
+	ImageUploadStatus  string         `json:"imageUploadStatus,omitempty"`
+	InstanceServerType string         `json:"instanceServerType,omitempty"`
+	RomVersion         string         `json:"romVersion,omitempty"`
+	ImageFiles         []ImageFile    `json:"imageFiles,omitempty"`
+	BaseImageVersionID FlexibleString `json:"baseImageVersionId,omitempty"`
+	ImageVersionName   string         `json:"imageVersionName,omitempty"`
+	Describe           string         `json:"describe,omitempty"`
+	CreateTime         FlexibleString `json:"createTime,omitempty"`
+	Raw                RawObject      `json:"-"`
+}
+
+func (i *InstanceImageInfo) UnmarshalJSON(data []byte) error {
+	type alias InstanceImageInfo
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*i = InstanceImageInfo(a)
+	return nil
+}
+
+type ImageInfo = InstanceImageInfo
+
+func (c *Client) ListBaseImages(ctx context.Context, req *ListBaseImagesRequest) (*Page[BaseImageInfo], error) {
+	var resp Page[BaseImageInfo]
 	if err := c.Do(ctx, pathBaseImages, req, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
 }
 
-func (c *Client) ListInstanceImages(ctx context.Context, req *ListImagesRequest) (*Page[ImageInfo], error) {
-	var resp Page[ImageInfo]
+func (c *Client) ListInstanceImages(ctx context.Context, req *ListInstanceImagesRequest) (*Page[InstanceImageInfo], error) {
+	var resp Page[InstanceImageInfo]
 	if err := c.Do(ctx, pathInstanceImages, req, &resp); err != nil {
 		return nil, err
 	}
@@ -114,7 +152,7 @@ type UpdateImageRequest struct {
 	ConfigID          string         `json:"configId,omitempty"`
 	ResourcePackageID FlexibleString `json:"resourcePackageId,omitempty"`
 	Reset             bool           `json:"reset,omitempty"`
-	AutoInstall       bool           `json:"autoInstall"`
+	AutoInstall       *bool          `json:"autoInstall,omitempty"`
 }
 
 type ImageUpdateInfoRequest struct {
