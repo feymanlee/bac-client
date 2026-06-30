@@ -49,7 +49,7 @@ func main() {
 	ctx := context.Background()
 	page, err := client.ListInstances(ctx, &bac.ListInstancesRequest{
 		PageRequest: bac.PageRequest{Page: 1},
-		Rows: 20,
+		Rows:        20,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -121,13 +121,13 @@ switch {
 case errors.As(err, &apiErr):
 	log.Printf("BAC error: code=%d message=%s ts=%s", apiErr.Code, apiErr.Message, apiErr.Timestamp)
 case errors.As(err, &httpErr):
-	log.Printf("HTTP error: status=%s body=%s", httpErr.Status, httpErr.RawBody)
+	log.Printf("HTTP error: status=%s", httpErr.Status)
 case errors.As(err, &decodeErr):
-	log.Printf("decode error: %v body=%s", decodeErr.Err, decodeErr.RawBody)
+	log.Printf("decode error: %v", decodeErr.Err)
 }
 ```
 
-`APIError.RawBody` keeps the full response body for diagnostics.
+`APIError.RawBody`, `HTTPError.RawBody`, and `DecodeError.RawBody` keep the full response body for diagnostics. Treat these bytes as sensitive: responses may contain server tokens, SSH credentials, generated passwords, or business data. Redact or truncate before writing them to logs.
 
 ## Implemented Typed APIs
 
@@ -137,6 +137,11 @@ case errors.As(err, &decodeErr):
 - Tasks: `GetTaskResult`, `ListTaskResults`, `ListTaskTypes`.
 - Images: `ListBaseImages`, `ListInstanceImages`, `UploadImage`, `GetImageUploadInfo`, `UpdateImage`, `GetImageUpdateInfo`, `RemoveImage`.
 - Monitoring, merchant, pool, tag, and snapshot APIs: see `docs/endpoints.md` for the full coverage table.
+
+Additional documentation:
+
+- [API conventions](docs/api-conventions.md)
+- [Endpoint coverage](docs/endpoints.md)
 
 ## Extending New Endpoints
 
@@ -155,6 +160,8 @@ func (c *Client) SomeAction(ctx context.Context, req *SomeActionRequest) (*SomeA
 ```
 
 Use `FlexibleString` for fields that the document or service may return as either JSON number or string.
+
+Most official list APIs use `page` and `rows`. Prefer request-specific `Rows` fields, for example `ListInstancesRequest{PageRequest: bac.PageRequest{Page: 1}, Rows: 20}`.
 
 ## Tests
 

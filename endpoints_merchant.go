@@ -70,26 +70,65 @@ func (c *Client) UpdateAlarmStrategyEnableStatus(ctx context.Context, req *Alarm
 }
 
 type OpenAccountRequest struct {
-	MerchantName string    `json:"merchantName,omitempty"`
-	ContactName  string    `json:"contactName,omitempty"`
-	Phone        string    `json:"phone,omitempty"`
-	Email        string    `json:"email,omitempty"`
-	Extra        RawObject `json:"extra,omitempty"`
+	UserName        string           `json:"userName,omitempty"`
+	Phone           string           `json:"phone,omitempty"`
+	Nickname        string           `json:"nickname,omitempty"`
+	RoleNames       []string         `json:"roleNames,omitempty"`
+	MerchantPoolNos []FlexibleString `json:"merchantPoolNos,omitempty"`
 }
 
-func (c *Client) OpenAccount(ctx context.Context, req *OpenAccountRequest) error {
-	return c.Do(ctx, pathOpenAccount, req, nil)
+type OpenAccountResponse struct {
+	Password string    `json:"password,omitempty"`
+	Raw      RawObject `json:"-"`
+}
+
+func (r *OpenAccountResponse) UnmarshalJSON(data []byte) error {
+	type alias OpenAccountResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = OpenAccountResponse(a)
+	return nil
+}
+
+func (c *Client) OpenAccount(ctx context.Context, req *OpenAccountRequest) (*OpenAccountResponse, error) {
+	var resp OpenAccountResponse
+	if err := c.Do(ctx, pathOpenAccount, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 type AddSubMerchantRequest struct {
-	MerchantNo   FlexibleString `json:"merchantNo,omitempty"`
-	MerchantName string         `json:"merchantName,omitempty"`
-	ContactName  string         `json:"contactName,omitempty"`
-	Phone        string         `json:"phone,omitempty"`
-	Email        string         `json:"email,omitempty"`
-	Extra        RawObject      `json:"extra,omitempty"`
+	ParentMerchantCode string `json:"parentMerchantCode,omitempty"`
+	MerchantCode       string `json:"merchantCode,omitempty"`
+	MerchantName       string `json:"merchantName,omitempty"`
+	MerchantType       string `json:"merchantType,omitempty"`
+	MerchantPhone      string `json:"merchantPhone,omitempty"`
+	AdminUserName      string `json:"adminUserName,omitempty"`
+	AdminPhone         string `json:"adminPhone,omitempty"`
 }
 
-func (c *Client) AddSubMerchant(ctx context.Context, req *AddSubMerchantRequest) error {
-	return c.Do(ctx, pathAddSubMerchant, req, nil)
+type AddSubMerchantResponse struct {
+	AdminPassword string    `json:"adminPassword,omitempty"`
+	Raw           RawObject `json:"-"`
+}
+
+func (r *AddSubMerchantResponse) UnmarshalJSON(data []byte) error {
+	type alias AddSubMerchantResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = AddSubMerchantResponse(a)
+	return nil
+}
+
+func (c *Client) AddSubMerchant(ctx context.Context, req *AddSubMerchantRequest) (*AddSubMerchantResponse, error) {
+	var resp AddSubMerchantResponse
+	if err := c.Do(ctx, pathAddSubMerchant, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

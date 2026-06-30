@@ -25,6 +25,58 @@ type SnapshotRequest struct {
 	Quota          FlexibleString   `json:"quota,omitempty"`
 }
 
+type InitDUFSSnapshotRequest struct {
+	InstanceCodes []string `json:"instanceCodes,omitempty"`
+	QuotaCapacity int      `json:"quotaCapacity,omitempty"`
+	MemoryLimit   int      `json:"memoryLimit,omitempty"`
+}
+
+type MountDUFSSnapshotRequest struct {
+	InstanceCodes []string       `json:"instanceCodes,omitempty"`
+	SnapshotID    FlexibleString `json:"snapshotId,omitempty"`
+	QuotaCapacity int            `json:"quotaCapacity,omitempty"`
+	MemoryLimit   int            `json:"memoryLimit,omitempty"`
+}
+
+type SnapshotMountInfo struct {
+	InstanceCode  string         `json:"instanceCode,omitempty"`
+	SnapshotID    FlexibleString `json:"snapshotId,omitempty"`
+	QuotaCapacity int            `json:"quotaCapacity,omitempty"`
+	MemoryLimit   int            `json:"memoryLimit,omitempty"`
+}
+
+type BatchMountDUFSSnapshotRequest struct {
+	SnapshotMountInfos []SnapshotMountInfo `json:"snapshotMountInfos,omitempty"`
+}
+
+type UnmountDUFSSnapshotRequest struct {
+	InstanceCodes []string `json:"instanceCodes,omitempty"`
+	SnapshotName  string   `json:"snapshotName,omitempty"`
+}
+
+type SetDUFSSnapshotQuotaRequest struct {
+	InstanceCodes []string `json:"instanceCodes,omitempty"`
+	QuotaCapacity int      `json:"quotaCapacity,omitempty"`
+}
+
+type ListDUFSSnapshotsRequest struct {
+	SnapshotName   string           `json:"snapshotName,omitempty"`
+	SnapshotStatus string           `json:"snapshotStatus,omitempty"`
+	SnapshotIDs    []FlexibleString `json:"snapshotIds,omitempty"`
+	Page           int              `json:"page,omitempty"`
+	Rows           int              `json:"rows,omitempty"`
+}
+
+type RemoveDUFSSnapshotRequest struct {
+	SnapshotIDs []FlexibleString `json:"snapshotIds,omitempty"`
+}
+
+type ListInstanceSnapshotsRequest struct {
+	InstanceCode string `json:"instanceCode,omitempty"`
+	Page         int    `json:"page,omitempty"`
+	Rows         int    `json:"rows,omitempty"`
+}
+
 type SnapshotInfo struct {
 	SnapshotID     FlexibleString `json:"snapshotId,omitempty"`
 	SnapshotName   string         `json:"snapshotName,omitempty"`
@@ -47,43 +99,45 @@ func (s *SnapshotInfo) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *Client) InitDUFSSnapshot(ctx context.Context, req *SnapshotRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+func (c *Client) InitDUFSSnapshot(ctx context.Context, req *InitDUFSSnapshotRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathDUFSSnapshotInit, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
-func (c *Client) MountDUFSSnapshot(ctx context.Context, req *SnapshotRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+func (c *Client) MountDUFSSnapshot(ctx context.Context, req *MountDUFSSnapshotRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathDUFSSnapshotMount, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
-func (c *Client) BatchMountDUFSSnapshot(ctx context.Context, req *SnapshotRequest) (*BatchTaskResponse, error) {
-	var resp BatchTaskResponse
+func (c *Client) BatchMountDUFSSnapshot(ctx context.Context, req *BatchMountDUFSSnapshotRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathDUFSSnapshotBatchMount, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
-func (c *Client) UnmountDUFSSnapshot(ctx context.Context, req *SnapshotRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+func (c *Client) UnmountDUFSSnapshot(ctx context.Context, req *UnmountDUFSSnapshotRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathDUFSSnapshotUnmount, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
-func (c *Client) SetDUFSSnapshotQuota(ctx context.Context, req *SnapshotRequest) error {
-	return c.Do(ctx, pathDUFSSnapshotQuotaSet, req, nil)
+func (c *Client) SetDUFSSnapshotQuota(ctx context.Context, req *SetDUFSSnapshotQuotaRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
+	if err := c.Do(ctx, pathDUFSSnapshotQuotaSet, req, &resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
-
-type ListDUFSSnapshotsRequest = SnapshotRequest
 
 func (c *Client) ListDUFSSnapshots(ctx context.Context, req *ListDUFSSnapshotsRequest) (*Page[SnapshotInfo], error) {
 	var resp Page[SnapshotInfo]
@@ -93,11 +147,9 @@ func (c *Client) ListDUFSSnapshots(ctx context.Context, req *ListDUFSSnapshotsRe
 	return &resp, nil
 }
 
-func (c *Client) RemoveDUFSSnapshot(ctx context.Context, req *SnapshotRequest) error {
+func (c *Client) RemoveDUFSSnapshot(ctx context.Context, req *RemoveDUFSSnapshotRequest) error {
 	return c.Do(ctx, pathDUFSSnapshotRemove, req, nil)
 }
-
-type ListInstanceSnapshotsRequest = SnapshotRequest
 
 func (c *Client) ListInstanceSnapshots(ctx context.Context, req *ListInstanceSnapshotsRequest) (*Page[SnapshotInfo], error) {
 	var resp Page[SnapshotInfo]

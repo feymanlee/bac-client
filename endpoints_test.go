@@ -282,6 +282,239 @@ func TestOfficialRequestShapesForHighRiskEndpoints(t *testing.T) {
 				forbidKeys(t, body, "operation", "instanceIds")
 			},
 		},
+		{
+			name:     "UploadImage",
+			wantPath: "/resources/instance-image/upload",
+			dataJSON: `{"imageVersionId":10001}`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.UploadImage(ctx, &UploadImageRequest{
+					ImageFiles: []ImageFile{{
+						ImageFileURL:  "http://example.com/root_aosp.img",
+						ImageFileName: "root_aosp.img",
+						ImageFileType: "root_aosp",
+						ImageFileMD5:  "md5",
+					}},
+					InstanceServerType: "3588",
+					RomVersion:         "android8.1",
+					BaseImageVersionID: FlexibleString("5"),
+					ImageVersionName:   "custom",
+					Describe:           "desc",
+				})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "imageFiles", "instanceServerType", "romVersion", "baseImageVersionId", "imageVersionName", "describe")
+				forbidKeys(t, body, "imageUrl", "imageMd5", "imageName")
+			},
+		},
+		{
+			name:     "UpdateImage",
+			wantPath: "/resources/instance-image/update",
+			dataJSON: `[{"instanceCode":"VM1","taskId":100}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.UpdateImage(ctx, &UpdateImageRequest{
+					ImageVersionID:    FlexibleString("5"),
+					InstanceCodes:     []string{"VM1"},
+					ConfigID:          "cfg",
+					ResourcePackageID: FlexibleString("7"),
+					Reset:             true,
+					AutoInstall:       true,
+				})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "imageVersionId", "instanceCodes", "configId", "resourcePackageId", "reset", "autoInstall")
+			},
+		},
+		{
+			name:     "RemoveImage",
+			wantPath: "/resources/instance-image/remove",
+			dataJSON: `{}`,
+			call: func(ctx context.Context, c *Client) error {
+				return c.RemoveImage(ctx, &RemoveImageRequest{ImageVersionIDs: []FlexibleString{"10001"}})
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "imageVersionIds")
+				forbidKeys(t, body, "imageVersionId")
+			},
+		},
+		{
+			name:     "SaveDesktopIconConfig",
+			wantPath: "/resources/app/save-desktop-icon-config",
+			dataJSON: `null`,
+			call: func(ctx context.Context, c *Client) error {
+				return c.SaveDesktopIconConfig(ctx, &SaveDesktopIconConfigRequest{
+					InstanceCodes:       []string{"VM1"},
+					AppID:               FlexibleString("1"),
+					Container:           -100,
+					Screen:              0,
+					X:                   1,
+					Y:                   2,
+					OverwriteCoordinate: true,
+				})
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "instanceCodes", "appId", "container", "screen", "x", "y", "overwriteCoordinate")
+				forbidKeys(t, body, "config")
+			},
+		},
+		{
+			name:     "ListInstalledApps",
+			wantPath: "/resources/instance/app-install-list",
+			dataJSON: `[{"instanceCode":"VM1","appInstallRecordList":[{"appName":"App","packageName":"pkg","versionName":"1.0","size":1024}]}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.ListInstalledApps(ctx, &AppInstallListRequest{InstanceCodes: []string{"VM1"}})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "instanceCodes")
+				forbidKeys(t, body, "instanceCode")
+			},
+		},
+		{
+			name:     "DownloadFile",
+			wantPath: "/resources/instance/file-download",
+			dataJSON: `[{"taskId":1000,"instanceCode":"VM1"}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.DownloadFile(ctx, &DownloadFileRequest{InstanceFiles: []InstanceFileDownload{{InstanceCode: "VM1", FilePath: "/sdcard/a.txt"}}})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "instanceFiles")
+			},
+		},
+		{
+			name:     "NewPad",
+			wantPath: "/distribute/pad/new-pad.html",
+			dataJSON: `[{"padCode":"VM1","taskId":100}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.NewPad(ctx, &NewPadRequest{PadModels: []PadModel{{PadCode: "VM1", IMEI: "imei", SerialNo: "sn"}}})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "padModels")
+				forbidKeys(t, body, "padCodes")
+			},
+		},
+		{
+			name:     "CleanAppCache",
+			wantPath: "/resources/device/clean-app-cache",
+			dataJSON: `[{"taskId":"2813218757970419736","deviceIp":"11.101.1.49"}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.CleanAppCache(ctx, &CleanAppCacheRequest{DeviceIPs: []string{"11.101.1.49"}})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "DeviceIps")
+				forbidKeys(t, body, "deviceIps", "instanceCodes")
+			},
+		},
+		{
+			name:     "UpdateCustomCode",
+			wantPath: "/resources/instance/custom-code-update",
+			dataJSON: `[{"instanceCode":"VM1","errorMsg":""}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.UpdateCustomCode(ctx, &CustomCodeUpdateRequest{InstanceCustomList: []InstanceCustom{{InstanceCode: "VM1", CustomCode: "DB-01"}}})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "instanceCustomList")
+				forbidKeys(t, body, "instanceCodes", "customCode")
+			},
+		},
+		{
+			name:     "DeployMarketingSuite",
+			wantPath: "/resources/instance/deploy-marketing-suite",
+			dataJSON: `[{"instanceCode":"VM1","authCode":"auth","taskId":1001}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.DeployMarketingSuite(ctx, &DeployMarketingSuiteRequest{
+					InstanceCodes:       []string{"VM1"},
+					AuthCodes:           []string{"auth"},
+					AppPackage:          "com.demo",
+					UseMerchantAuthCode: true,
+				})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "instanceCodes", "authCodes", "appPackage", "useMerchantAuthCode")
+			},
+		},
+		{
+			name:     "SaveInstancePool",
+			wantPath: "/resources/instance-pool/save",
+			dataJSON: `{"merchantPoolNo":"10001"}`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.SaveInstancePool(ctx, &SaveInstancePoolRequest{
+					ParentMerchantPoolNo: FlexibleString("10000"),
+					InstancePoolName:     "pool",
+					InstancePoolType:     "cloud_phone",
+				})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "parentMerchantPoolNo", "instancePoolName", "instancePoolType")
+				forbidKeys(t, body, "poolName")
+			},
+		},
+		{
+			name:     "OpenAccount",
+			wantPath: "/merchant/open-account/save",
+			dataJSON: `{"password":"pwd"}`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.OpenAccount(ctx, &OpenAccountRequest{
+					UserName: "admin", Phone: "13800000000", Nickname: "Admin",
+					RoleNames: []string{"role"}, MerchantPoolNos: []FlexibleString{"10000"},
+				})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "userName", "phone", "nickname", "roleNames", "merchantPoolNos")
+				forbidKeys(t, body, "merchantName", "contactName")
+			},
+		},
+		{
+			name:     "AddSubMerchant",
+			wantPath: "/merchant/sub-merchant/add",
+			dataJSON: `{"adminPassword":"pwd"}`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.AddSubMerchant(ctx, &AddSubMerchantRequest{
+					ParentMerchantCode: "10000", MerchantCode: "10001", MerchantName: "merchant",
+					MerchantType: "cloud_phone", MerchantPhone: "13800000000", AdminUserName: "admin", AdminPhone: "13900000000",
+				})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "parentMerchantCode", "merchantCode", "merchantName", "merchantType", "merchantPhone", "adminUserName", "adminPhone")
+				forbidKeys(t, body, "merchantNo", "contactName")
+			},
+		},
+		{
+			name:     "InitDUFSSnapshot",
+			wantPath: "/resources/dufs-snapshot/init",
+			dataJSON: `[{"instanceCode":"VM1","taskId":100}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.InitDUFSSnapshot(ctx, &InitDUFSSnapshotRequest{InstanceCodes: []string{"VM1"}, QuotaCapacity: 256, MemoryLimit: 1024})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "instanceCodes", "quotaCapacity", "memoryLimit")
+				forbidKeys(t, body, "quota")
+			},
+		},
+		{
+			name:     "BatchMountDUFSSnapshot",
+			wantPath: "/resources/dufs-snapshot/batch-mount",
+			dataJSON: `[{"instanceCode":"VM1","taskId":100}]`,
+			call: func(ctx context.Context, c *Client) error {
+				_, err := c.BatchMountDUFSSnapshot(ctx, &BatchMountDUFSSnapshotRequest{
+					SnapshotMountInfos: []SnapshotMountInfo{{InstanceCode: "VM1", SnapshotID: FlexibleString("10"), QuotaCapacity: 256}},
+				})
+				return err
+			},
+			assertBody: func(t *testing.T, body map[string]any) {
+				requireKeys(t, body, "snapshotMountInfos")
+			},
+		},
 	}
 
 	for _, tt := range tests {

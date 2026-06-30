@@ -115,26 +115,63 @@ func (c *Client) BuiltinUninstallApp(ctx context.Context, req *BuiltinAppRequest
 	return &resp, nil
 }
 
-type DesktopIconConfigRequest struct {
-	InstanceCode  string           `json:"instanceCode,omitempty"`
+type GetDesktopIconConfigRequest struct {
 	InstanceCodes []string         `json:"instanceCodes,omitempty"`
 	AppIDs        []FlexibleString `json:"appIds,omitempty"`
-	Config        RawObject        `json:"config,omitempty"`
+	Container     int              `json:"container,omitempty"`
+	Screen        int              `json:"screen,omitempty"`
+	X             int              `json:"x,omitempty"`
+	Y             int              `json:"y,omitempty"`
 }
 
-func (c *Client) GetDesktopIconConfig(ctx context.Context, req *DesktopIconConfigRequest) (RawObject, error) {
-	var resp RawObject
+type SaveDesktopIconConfigRequest struct {
+	InstanceCodes       []string       `json:"instanceCodes,omitempty"`
+	AppID               FlexibleString `json:"appId,omitempty"`
+	Container           int            `json:"container"`
+	Screen              int            `json:"screen"`
+	X                   int            `json:"x"`
+	Y                   int            `json:"y"`
+	OverwriteCoordinate bool           `json:"overwriteCoordinate,omitempty"`
+}
+
+type RemoveDesktopIconConfigRequest struct {
+	InstanceCodes []string         `json:"instanceCodes,omitempty"`
+	AppIDs        []FlexibleString `json:"appIds,omitempty"`
+}
+
+type DesktopIconConfig struct {
+	InstanceCode string         `json:"instanceCode,omitempty"`
+	AppID        FlexibleString `json:"appId,omitempty"`
+	Container    int            `json:"container,omitempty"`
+	Screen       int            `json:"screen,omitempty"`
+	X            int            `json:"x,omitempty"`
+	Y            int            `json:"y,omitempty"`
+	Raw          RawObject      `json:"-"`
+}
+
+func (r *DesktopIconConfig) UnmarshalJSON(data []byte) error {
+	type alias DesktopIconConfig
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = DesktopIconConfig(a)
+	return nil
+}
+
+func (c *Client) GetDesktopIconConfig(ctx context.Context, req *GetDesktopIconConfigRequest) ([]DesktopIconConfig, error) {
+	var resp []DesktopIconConfig
 	if err := c.Do(ctx, pathGetDesktopIconConfig, req, &resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
-func (c *Client) SaveDesktopIconConfig(ctx context.Context, req *DesktopIconConfigRequest) error {
+func (c *Client) SaveDesktopIconConfig(ctx context.Context, req *SaveDesktopIconConfigRequest) error {
 	return c.Do(ctx, pathSaveDesktopIconConfig, req, nil)
 }
 
-func (c *Client) RemoveDesktopIconConfig(ctx context.Context, req *DesktopIconConfigRequest) error {
+func (c *Client) RemoveDesktopIconConfig(ctx context.Context, req *RemoveDesktopIconConfigRequest) error {
 	return c.Do(ctx, pathRemoveDesktopIconConfig, req, nil)
 }
 
@@ -152,11 +189,45 @@ func (c *Client) RefreshRecommendAppIcons(ctx context.Context, req *RecommendApp
 }
 
 type AppInstallListRequest struct {
-	InstanceCode string `json:"instanceCode,omitempty"`
+	InstanceCodes []string `json:"instanceCodes,omitempty"`
 }
 
-func (c *Client) ListInstalledApps(ctx context.Context, req *AppInstallListRequest) ([]AppInfo, error) {
-	var resp []AppInfo
+type InstalledAppList struct {
+	InstanceCode         string               `json:"instanceCode,omitempty"`
+	AppInstallRecordList []InstalledAppRecord `json:"appInstallRecordList,omitempty"`
+	Raw                  RawObject            `json:"-"`
+}
+
+func (r *InstalledAppList) UnmarshalJSON(data []byte) error {
+	type alias InstalledAppList
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = InstalledAppList(a)
+	return nil
+}
+
+type InstalledAppRecord struct {
+	AppName     string         `json:"appName,omitempty"`
+	PackageName string         `json:"packageName,omitempty"`
+	VersionName string         `json:"versionName,omitempty"`
+	Size        FlexibleString `json:"size,omitempty"`
+	Raw         RawObject      `json:"-"`
+}
+
+func (r *InstalledAppRecord) UnmarshalJSON(data []byte) error {
+	type alias InstalledAppRecord
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = InstalledAppRecord(a)
+	return nil
+}
+
+func (c *Client) ListInstalledApps(ctx context.Context, req *AppInstallListRequest) ([]InstalledAppList, error) {
+	var resp []InstalledAppList
 	if err := c.Do(ctx, pathAppInstallList, req, &resp); err != nil {
 		return nil, err
 	}

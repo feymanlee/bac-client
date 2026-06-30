@@ -178,7 +178,14 @@ func (c *Client) Do(ctx context.Context, path string, req any, resp any, opts ..
 	}
 
 	endpoint := c.endpoint(path)
-	endpoint.RawQuery = signedQueryForNonce(c.appKey, c.appSecret, rc.authVersion, nonce).Encode()
+	query := endpoint.Query()
+	for key, values := range signedQueryForNonce(c.appKey, c.appSecret, rc.authVersion, nonce) {
+		query.Del(key)
+		for _, value := range values {
+			query.Add(key, value)
+		}
+	}
+	endpoint.RawQuery = query.Encode()
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(body))
 	if err != nil {
@@ -224,14 +231,16 @@ func (c *Client) Do(ctx context.Context, path string, req any, resp any, opts ..
 
 func (c *Client) endpoint(path string) url.URL {
 	u := *c.baseURL
-	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		parsed, err := url.Parse(path)
-		if err == nil {
+	parsed, err := url.Parse(path)
+	if err == nil {
+		if parsed.IsAbs() {
 			return *parsed
 		}
+		path = parsed.Path
+		u.RawQuery = parsed.RawQuery
+		u.Fragment = parsed.Fragment
 	}
 	u.Path = strings.TrimRight(u.Path, "/") + "/" + strings.TrimLeft(path, "/")
-	u.RawQuery = ""
 	return u
 }
 

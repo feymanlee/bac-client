@@ -1,6 +1,9 @@
 package bac
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 const (
 	pathListInstances        = "/resources/instance/infos"
@@ -203,6 +206,11 @@ type TaskResponse struct {
 	TaskID       FlexibleString `json:"taskId,omitempty"`
 	InstanceCode string         `json:"instanceCode,omitempty"`
 	PadCode      string         `json:"padCode,omitempty"`
+	DeviceCode   string         `json:"deviceCode,omitempty"`
+	DeviceIP     string         `json:"deviceIp,omitempty"`
+	AuthCode     string         `json:"authCode,omitempty"`
+	SnapshotID   FlexibleString `json:"snapshotId,omitempty"`
+	ErrorMsg     string         `json:"errorMsg,omitempty"`
 	Raw          RawObject      `json:"-"`
 }
 
@@ -223,6 +231,14 @@ type BatchTaskResponse struct {
 }
 
 func (r *BatchTaskResponse) UnmarshalJSON(data []byte) error {
+	var list []TaskResponse
+	if err := json.Unmarshal(data, &list); err == nil {
+		r.SuccessList = list
+		r.FailList = nil
+		r.Raw = nil
+		return nil
+	}
+
 	type alias BatchTaskResponse
 	var a alias
 	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
@@ -364,32 +380,56 @@ func (c *Client) RebootInstance(ctx context.Context, req *InstanceActionRequest)
 	return &resp, nil
 }
 
-func (c *Client) RebootDevice(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+type RebootDeviceRequest struct {
+	DeviceCodes []string `json:"deviceCodes,omitempty"`
+	RebootType  int      `json:"rebootType,omitempty"`
+}
+
+func (c *Client) RebootDevice(ctx context.Context, req *RebootDeviceRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathRebootDevice, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
 func (c *Client) ResetDevice(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
 	return c.CommandReset(ctx, req)
 }
 
-func (c *Client) NewPad(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+type NewPadRequest struct {
+	PadModels []PadModel `json:"padModels,omitempty"`
+}
+
+type PadModel struct {
+	PadCode      string `json:"padCode,omitempty"`
+	IMEI         string `json:"imei,omitempty"`
+	SerialNo     string `json:"serialno,omitempty"`
+	WiFiMac      string `json:"wifimac,omitempty"`
+	AndroidID    string `json:"androidid,omitempty"`
+	Model        string `json:"model,omitempty"`
+	Brand        string `json:"brand,omitempty"`
+	Manufacturer string `json:"manufacturer,omitempty"`
+}
+
+func (c *Client) NewPad(ctx context.Context, req *NewPadRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathNewPad, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
-func (c *Client) CleanAppCache(ctx context.Context, req *InstanceActionRequest) (*TaskResponse, error) {
-	var resp TaskResponse
+type CleanAppCacheRequest struct {
+	DeviceIPs []string `json:"DeviceIps,omitempty"`
+}
+
+func (c *Client) CleanAppCache(ctx context.Context, req *CleanAppCacheRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathCleanAppCache, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
 type BatchExecuteScriptRequest struct {
@@ -445,16 +485,20 @@ func (c *Client) GetBindInfos(ctx context.Context, req *BindInfosRequest) ([]Bin
 }
 
 type CustomCodeUpdateRequest struct {
-	InstanceCodes []string `json:"instanceCodes,omitempty"`
-	CustomCode    string   `json:"customCode,omitempty"`
+	InstanceCustomList []InstanceCustom `json:"instanceCustomList,omitempty"`
+}
+
+type InstanceCustom struct {
+	InstanceCode string `json:"instanceCode,omitempty"`
+	CustomCode   string `json:"customCode,omitempty"`
 }
 
 func (c *Client) UpdateCustomCode(ctx context.Context, req *CustomCodeUpdateRequest) (*BatchTaskResponse, error) {
-	var resp BatchTaskResponse
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathCustomCodeUpdate, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return &BatchTaskResponse{SuccessList: resp}, nil
 }
 
 type DataCopyRequest struct {
@@ -484,12 +528,19 @@ func (c *Client) CopyInstanceData(ctx context.Context, req *DataCopyRequest) ([]
 	return resp, nil
 }
 
-func (c *Client) DeployMarketingSuite(ctx context.Context, req *InstanceActionRequest) (*BatchTaskResponse, error) {
-	var resp BatchTaskResponse
+type DeployMarketingSuiteRequest struct {
+	InstanceCodes       []string `json:"instanceCodes,omitempty"`
+	AuthCodes           []string `json:"authCodes,omitempty"`
+	AppPackage          string   `json:"appPackage,omitempty"`
+	UseMerchantAuthCode bool     `json:"useMerchantAuthCode,omitempty"`
+}
+
+func (c *Client) DeployMarketingSuite(ctx context.Context, req *DeployMarketingSuiteRequest) ([]TaskResponse, error) {
+	var resp []TaskResponse
 	if err := c.Do(ctx, pathDeployMarketingSuite, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
 type ScreenshotURLRequest struct {

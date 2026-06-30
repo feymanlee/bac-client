@@ -171,6 +171,42 @@ func TestDoHonorsContextTimeout(t *testing.T) {
 	}
 }
 
+func TestDoMergesExistingQueryWithSignedQuery(t *testing.T) {
+	var gotQuery map[string]string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = map[string]string{
+			"foo":      r.URL.Query().Get("foo"),
+			"appkey":   r.URL.Query().Get("appkey"),
+			"auth_ver": r.URL.Query().Get("auth_ver"),
+			"nonce":    r.URL.Query().Get("nonce"),
+			"s":        r.URL.Query().Get("s"),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"code":0,"msg":"OK","data":null,"ts":1710000000124}`))
+	}))
+	defer ts.Close()
+
+	c, err := NewClient("ak", "sk", "123456789012345678901234", WithBaseURL(ts.URL), WithNonceFunc(func() int64 {
+		return 1710000000123
+	}))
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	if err := c.Do(context.Background(), "/x?foo=bar&appkey=old", map[string]string{}, nil); err != nil {
+		t.Fatalf("Do() error = %v", err)
+	}
+	if gotQuery["foo"] != "bar" {
+		t.Fatalf("foo query = %q", gotQuery["foo"])
+	}
+	if gotQuery["appkey"] != "ak" || gotQuery["auth_ver"] != "3" || gotQuery["nonce"] != "1710000000123" {
+		t.Fatalf("signed query = %#v", gotQuery)
+	}
+	if gotQuery["s"] != Sign("ak", "sk", "3", "1710000000123") {
+		t.Fatalf("signature = %q", gotQuery["s"])
+	}
+}
+
 func decryptForTest(ciphertext string, desKey string, nonce int64) ([]byte, error) {
 	raw, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {

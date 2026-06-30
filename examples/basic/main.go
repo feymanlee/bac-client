@@ -25,7 +25,8 @@ func main() {
 	defer cancel()
 
 	instances, err := client.ListInstances(ctx, &bac.ListInstancesRequest{
-		PageRequest: bac.PageRequest{Page: 1, Size: 10},
+		PageRequest: bac.PageRequest{Page: 1},
+		Rows:        10,
 	})
 	if err != nil {
 		var apiErr *bac.APIError

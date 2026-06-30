@@ -15,7 +15,6 @@ const (
 
 type InstancePoolRequest struct {
 	MerchantPoolNo FlexibleString `json:"merchantPoolNo,omitempty"`
-	PoolName       string         `json:"poolName,omitempty"`
 	AutoReset      bool           `json:"autoReset,omitempty"`
 	InstanceCodes  []string       `json:"instanceCodes,omitempty"`
 	Extra          RawObject      `json:"extra,omitempty"`
@@ -25,8 +24,33 @@ func (c *Client) AllocateInstancePool(ctx context.Context, req *InstancePoolRequ
 	return c.Do(ctx, pathAllocateInstancePool, req, nil)
 }
 
-func (c *Client) SaveInstancePool(ctx context.Context, req *InstancePoolRequest) error {
-	return c.Do(ctx, pathSaveInstancePool, req, nil)
+type SaveInstancePoolRequest struct {
+	ParentMerchantPoolNo FlexibleString `json:"parentMerchantPoolNo,omitempty"`
+	InstancePoolName     string         `json:"instancePoolName,omitempty"`
+	InstancePoolType     string         `json:"instancePoolType,omitempty"`
+}
+
+type SaveInstancePoolResponse struct {
+	MerchantPoolNo FlexibleString `json:"merchantPoolNo,omitempty"`
+	Raw            RawObject      `json:"-"`
+}
+
+func (r *SaveInstancePoolResponse) UnmarshalJSON(data []byte) error {
+	type alias SaveInstancePoolResponse
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = SaveInstancePoolResponse(a)
+	return nil
+}
+
+func (c *Client) SaveInstancePool(ctx context.Context, req *SaveInstancePoolRequest) (*SaveInstancePoolResponse, error) {
+	var resp SaveInstancePoolResponse
+	if err := c.Do(ctx, pathSaveInstancePool, req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 type InstanceTagRequest struct {
