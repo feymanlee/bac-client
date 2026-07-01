@@ -55,7 +55,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("instances: %+v", page)
+	for _, instance := range page.PageData {
+		log.Printf("instance=%s instanceIp=%s deviceIp=%s", instance.InstanceCode, instance.InstanceIP, instance.DeviceIP)
+	}
 }
 ```
 

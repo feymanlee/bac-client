@@ -2,7 +2,6 @@ package bac
 
 import (
 	"context"
-	"encoding/json"
 )
 
 const (
@@ -20,21 +19,10 @@ type QueryFlowRequest struct {
 
 type QueryFlowResponse struct {
 	TaskID FlexibleString `json:"taskId,omitempty"`
-	Items  []RawObject    `json:"items,omitempty"`
 	Raw    RawObject      `json:"-"`
 }
 
 func (r *QueryFlowResponse) UnmarshalJSON(data []byte) error {
-	var list []RawObject
-	if err := json.Unmarshal(data, &list); err == nil {
-		r.Items = list
-		if len(list) > 0 {
-			if taskID, ok := list[0]["taskId"]; ok {
-				_ = json.Unmarshal(taskID, &r.TaskID)
-			}
-		}
-		return nil
-	}
 	type alias QueryFlowResponse
 	var a alias
 	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
@@ -56,10 +44,48 @@ type QueryFlowResultRequest struct {
 	TaskID FlexibleString `json:"taskId,omitempty"`
 }
 
-func (c *Client) QueryFlowResult(ctx context.Context, req *QueryFlowResultRequest) (RawObject, error) {
-	var resp RawObject
+type QueryFlowResult struct {
+	TaskID        FlexibleString       `json:"taskId,omitempty"`
+	TaskDesc      string               `json:"taskDesc,omitempty"`
+	BillingType   string               `json:"billingType,omitempty"`
+	TaskStatus    string               `json:"taskStatus,omitempty"`
+	Msg           string               `json:"msg,omitempty"`
+	BillingValue  FlexibleString       `json:"billingValue,omitempty"`
+	BandwidthList []FlowBandwidthPoint `json:"bandwidthList,omitempty"`
+	Raw           RawObject            `json:"-"`
+}
+
+func (r *QueryFlowResult) UnmarshalJSON(data []byte) error {
+	type alias QueryFlowResult
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*r = QueryFlowResult(a)
+	return nil
+}
+
+type FlowBandwidthPoint struct {
+	RecordTime FlexibleString `json:"recordTime,omitempty"`
+	Send       FlexibleString `json:"send,omitempty"`
+	Receive    FlexibleString `json:"receive,omitempty"`
+	Raw        RawObject      `json:"-"`
+}
+
+func (p *FlowBandwidthPoint) UnmarshalJSON(data []byte) error {
+	type alias FlowBandwidthPoint
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*p = FlowBandwidthPoint(a)
+	return nil
+}
+
+func (c *Client) QueryFlowResult(ctx context.Context, req *QueryFlowResultRequest) (*QueryFlowResult, error) {
+	var resp QueryFlowResult
 	if err := c.Do(ctx, pathQueryFlowResult, req, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return &resp, nil
 }

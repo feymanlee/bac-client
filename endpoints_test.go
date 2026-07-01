@@ -24,7 +24,7 @@ func TestTypedWrapperUsesDocumentPath(t *testing.T) {
 		t.Fatalf("NewClient() error = %v", err)
 	}
 
-	_, err = c.ListInstances(context.Background(), &ListInstancesRequest{PageRequest: PageRequest{Page: 1, Size: 10}})
+	_, err = c.ListInstances(context.Background(), &ListInstancesRequest{PageRequest: PageRequest{Page: 1}, Rows: 10})
 	if err != nil {
 		t.Fatalf("ListInstances() error = %v", err)
 	}

@@ -13,8 +13,31 @@ type ListEmulationAuthCodesRequest struct {
 	Rows          int      `json:"rows,omitempty"`
 }
 
-func (c *Client) ListEmulationAuthCodes(ctx context.Context, req *ListEmulationAuthCodesRequest) (*Page[RawObject], error) {
-	var resp Page[RawObject]
+type EmulationAuthCode struct {
+	AuthCode     string         `json:"authCode,omitempty"`
+	ExpireTime   FlexibleString `json:"expireTime,omitempty"`
+	AuthStatus   int            `json:"authStatus,omitempty"`
+	ActivateTime FlexibleString `json:"activateTime,omitempty"`
+	PackageName  string         `json:"packageName,omitempty"`
+	DeviceIP     string         `json:"deviceIp,omitempty"`
+	InstanceIP   string         `json:"instanceIp,omitempty"`
+	InstanceCode string         `json:"instanceCode,omitempty"`
+	CreateTime   FlexibleString `json:"createTime,omitempty"`
+	Raw          RawObject      `json:"-"`
+}
+
+func (a *EmulationAuthCode) UnmarshalJSON(data []byte) error {
+	type alias EmulationAuthCode
+	var v alias
+	if err := unmarshalRaw(data, (*RawObject)(&v.Raw), &v); err != nil {
+		return err
+	}
+	*a = EmulationAuthCode(v)
+	return nil
+}
+
+func (c *Client) ListEmulationAuthCodes(ctx context.Context, req *ListEmulationAuthCodesRequest) (*Page[EmulationAuthCode], error) {
+	var resp Page[EmulationAuthCode]
 	if err := c.Do(ctx, pathEmulationAuthCodePage, req, &resp); err != nil {
 		return nil, err
 	}

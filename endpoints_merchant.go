@@ -39,6 +39,7 @@ type AlarmStrategy struct {
 	AlarmThreshold       FlexibleString `json:"alarmThreshold,omitempty"`
 	AlarmSilencePeriod   FlexibleString `json:"alarmSilencePeriod,omitempty"`
 	SMSNotifyStatus      FlexibleString `json:"smsNotifyStatus,omitempty"`
+	SMSNotifyObjects     []string       `json:"smsNotifyObjects,omitempty"`
 	CallbackNotifyStatus FlexibleString `json:"callbackNotifyStatus,omitempty"`
 	EnableStatus         FlexibleString `json:"enableStatus,omitempty"`
 	CreateTime           FlexibleString `json:"createTime,omitempty"`

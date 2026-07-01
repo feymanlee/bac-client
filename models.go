@@ -55,7 +55,6 @@ func (s FlexibleString) Int64() (int64, error) {
 
 type PageRequest struct {
 	Page int `json:"page,omitempty"`
-	Size int `json:"size,omitempty"`
 }
 
 type Page[T any] struct {
@@ -90,7 +89,7 @@ func (p *Page[T]) UnmarshalJSON(data []byte) error {
 type TaskResult struct {
 	TaskID      FlexibleString  `json:"taskId,omitempty"`
 	PadCode     string          `json:"padCode,omitempty"`
-	TaskStatus  string          `json:"taskStatus,omitempty"`
+	TaskStatus  FlexibleString  `json:"taskStatus,omitempty"`
 	TaskResult  string          `json:"taskResult,omitempty"`
 	TaskType    string          `json:"taskType,omitempty"`
 	CreateTime  FlexibleString  `json:"createTime,omitempty"`

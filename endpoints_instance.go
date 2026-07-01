@@ -76,13 +76,47 @@ type ListInstancesRequest struct {
 }
 
 type Instance struct {
-	InstanceID   string         `json:"instanceId,omitempty"`
-	InstanceCode string         `json:"instanceCode,omitempty"`
-	Name         string         `json:"name,omitempty"`
-	Status       FlexibleString `json:"status,omitempty"`
-	IP           string         `json:"ip,omitempty"`
-	DeviceIP     string         `json:"deviceIp,omitempty"`
-	Raw          RawObject      `json:"-"`
+	InstanceID          string         `json:"instanceId,omitempty"`
+	InstanceCode        string         `json:"instanceCode,omitempty"`
+	InstanceIP          string         `json:"instanceIp,omitempty"`
+	DeviceIP            string         `json:"deviceIp,omitempty"`
+	DeviceIPSegment     string         `json:"deviceIpSegment,omitempty"`
+	DeviceCode          string         `json:"deviceCode,omitempty"`
+	InstanceType        string         `json:"instanceType,omitempty"`
+	InstanceServerType  string         `json:"instanceServerType,omitempty"`
+	InstanceGrade       string         `json:"instanceGrade,omitempty"`
+	RomVersion          string         `json:"romVersion,omitempty"`
+	MerchantPoolNo      FlexibleString `json:"merchantPoolNo,omitempty"`
+	IDCCode             string         `json:"idcCode,omitempty"`
+	IDCName             string         `json:"idcName,omitempty"`
+	AvailableStatus     string         `json:"availableStatus,omitempty"`
+	UsableStatus        string         `json:"usableStatus,omitempty"`
+	MaintainStatus      int            `json:"maintainStatus,omitempty"`
+	RecycleStatus       string         `json:"recycleStatus,omitempty"`
+	TaskStatus          string         `json:"taskStatus,omitempty"`
+	InstanceStatus      int            `json:"instanceStatus,omitempty"`
+	DeviceStatus        int            `json:"deviceStatus,omitempty"`
+	MalfunctionStatus   int            `json:"malfunctionStatus,omitempty"`
+	NetworkStatus       int            `json:"networkStatus,omitempty"`
+	BindStatus          string         `json:"bindStatus,omitempty"`
+	ControlStatus       string         `json:"controlStatus,omitempty"`
+	ImageVersionID      FlexibleString `json:"imageVersionId,omitempty"`
+	ImageVersionName    string         `json:"imageVersionName,omitempty"`
+	SnapshotMountStatus string         `json:"snapshotMountStatus,omitempty"`
+	SnapshotID          FlexibleString `json:"snapshotId,omitempty"`
+	MemoryLimit         FlexibleString `json:"memoryLimit,omitempty"`
+	UpSpeed             FlexibleString `json:"upSpeed,omitempty"`
+	DownSpeed           FlexibleString `json:"downSpeed,omitempty"`
+	IntranetUpSpeed     FlexibleString `json:"intranetUpSpeed,omitempty"`
+	IntranetDownSpeed   FlexibleString `json:"intranetDownSpeed,omitempty"`
+	AllocateTime        FlexibleString `json:"allocateTime,omitempty"`
+	RecycleTime         FlexibleString `json:"recycleTime,omitempty"`
+	Tags                []InstanceTag  `json:"tags,omitempty"`
+	EmulationAuthStatus int            `json:"emulationAuthStatus,omitempty"`
+	Name                string         `json:"name,omitempty"`
+	Status              FlexibleString `json:"status,omitempty"`
+	IP                  string         `json:"ip,omitempty"`
+	Raw                 RawObject      `json:"-"`
 }
 
 func (i *Instance) UnmarshalJSON(data []byte) error {
@@ -209,11 +243,11 @@ type InstanceFileDownload struct {
 }
 
 func (c *Client) DownloadFile(ctx context.Context, req *DownloadFileRequest) (*BatchTaskResponse, error) {
-	var resp BatchTaskResponse
+	var resp taskResponseList
 	if err := c.Do(ctx, pathDownloadFile, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return &BatchTaskResponse{SuccessList: []TaskResponse(resp)}, nil
 }
 
 type InstanceActionRequest struct {
@@ -236,6 +270,22 @@ type TaskResponse struct {
 	SnapshotID   FlexibleString `json:"snapshotId,omitempty"`
 	ErrorMsg     string         `json:"errorMsg,omitempty"`
 	Raw          RawObject      `json:"-"`
+}
+
+type taskResponseList []TaskResponse
+
+func (l *taskResponseList) UnmarshalJSON(data []byte) error {
+	var list []TaskResponse
+	if err := json.Unmarshal(data, &list); err == nil {
+		*l = list
+		return nil
+	}
+	var batch BatchTaskResponse
+	if err := json.Unmarshal(data, &batch); err != nil {
+		return err
+	}
+	*l = batch.SuccessList
+	return nil
 }
 
 func (r *TaskResponse) UnmarshalJSON(data []byte) error {
@@ -746,11 +796,11 @@ type MemoryLimitRequest struct {
 }
 
 func (c *Client) SetMemoryLimit(ctx context.Context, req *MemoryLimitRequest) (*BatchTaskResponse, error) {
-	var resp BatchTaskResponse
+	var resp taskResponseList
 	if err := c.Do(ctx, pathMemoryLimit, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return &BatchTaskResponse{SuccessList: []TaskResponse(resp)}, nil
 }
 
 type NetworkProxyWorkflowRequest struct {
@@ -782,11 +832,11 @@ type SetSpeedRequest struct {
 }
 
 func (c *Client) SetSpeed(ctx context.Context, req *SetSpeedRequest) (*BatchTaskResponse, error) {
-	var resp BatchTaskResponse
+	var resp taskResponseList
 	if err := c.Do(ctx, pathSetSpeed, req, &resp); err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return &BatchTaskResponse{SuccessList: []TaskResponse(resp)}, nil
 }
 
 type SSHInfoRequest struct {
@@ -830,12 +880,62 @@ type SummaryDataRequest struct {
 	IncludeSubPool bool           `json:"includeSubPool"`
 }
 
-func (c *Client) GetSummaryData(ctx context.Context, req *SummaryDataRequest) (RawObject, error) {
-	var resp RawObject
+type SummaryData struct {
+	TotalData     InstanceCountSummary `json:"totalData,omitempty"`
+	AvailableData InstanceCountSummary `json:"availableData,omitempty"`
+	BoundData     InstanceCountSummary `json:"boundData,omitempty"`
+	Raw           RawObject            `json:"-"`
+}
+
+func (s *SummaryData) UnmarshalJSON(data []byte) error {
+	type alias SummaryData
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*s = SummaryData(a)
+	return nil
+}
+
+type InstanceCountSummary struct {
+	TotalInstanceCount FlexibleString `json:"totalInstanceCount,omitempty"`
+	IDCList            []IDCSummary   `json:"idcList,omitempty"`
+	Raw                RawObject      `json:"-"`
+}
+
+func (s *InstanceCountSummary) UnmarshalJSON(data []byte) error {
+	type alias InstanceCountSummary
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*s = InstanceCountSummary(a)
+	return nil
+}
+
+type IDCSummary struct {
+	IDCName       string         `json:"idcName,omitempty"`
+	IDCCode       string         `json:"idcCode,omitempty"`
+	InstanceCount FlexibleString `json:"instanceCount,omitempty"`
+	Raw           RawObject      `json:"-"`
+}
+
+func (s *IDCSummary) UnmarshalJSON(data []byte) error {
+	type alias IDCSummary
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*s = IDCSummary(a)
+	return nil
+}
+
+func (c *Client) GetSummaryData(ctx context.Context, req *SummaryDataRequest) (*SummaryData, error) {
+	var resp SummaryData
 	if err := c.Do(ctx, pathSummaryData, req, &resp); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	return &resp, nil
 }
 
 type MaintainStatusRequest struct {
@@ -892,8 +992,37 @@ type ListDevicesRequest struct {
 	DeviceStatus       int      `json:"deviceStatus,omitempty"`
 }
 
-func (c *Client) ListDevices(ctx context.Context, req *ListDevicesRequest) (*Page[RawObject], error) {
-	var resp Page[RawObject]
+type Device struct {
+	DeviceIP           string         `json:"deviceIp,omitempty"`
+	DeviceIPSegment    string         `json:"deviceIpSegment,omitempty"`
+	DeviceCode         string         `json:"deviceCode,omitempty"`
+	IDCCode            string         `json:"idcCode,omitempty"`
+	IDCName            string         `json:"idcName,omitempty"`
+	InstanceServerType string         `json:"instanceServerType,omitempty"`
+	RomVersion         string         `json:"romVersion,omitempty"`
+	InstanceGrade      FlexibleString `json:"instanceGrade,omitempty"`
+	InstanceGradeLimit FlexibleString `json:"instanceGradeLimit,omitempty"`
+	AllocateTime       FlexibleString `json:"allocateTime,omitempty"`
+	RecycleTime        FlexibleString `json:"recycleTime,omitempty"`
+	MemoryModel        string         `json:"memoryModel,omitempty"`
+	CPUModel           string         `json:"cpuModel,omitempty"`
+	DiskModel          string         `json:"diskModel,omitempty"`
+	DeviceStatus       int            `json:"deviceStatus,omitempty"`
+	Raw                RawObject      `json:"-"`
+}
+
+func (d *Device) UnmarshalJSON(data []byte) error {
+	type alias Device
+	var a alias
+	if err := unmarshalRaw(data, (*RawObject)(&a.Raw), &a); err != nil {
+		return err
+	}
+	*d = Device(a)
+	return nil
+}
+
+func (c *Client) ListDevices(ctx context.Context, req *ListDevicesRequest) (*Page[Device], error) {
+	var resp Page[Device]
 	if err := c.Do(ctx, pathDevicePage, req, &resp); err != nil {
 		return nil, err
 	}

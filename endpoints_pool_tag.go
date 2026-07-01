@@ -67,7 +67,7 @@ type InstanceTag struct {
 	TagID                FlexibleString `json:"tagId,omitempty"`
 	TagName              string         `json:"tagName,omitempty"`
 	RelatedInstanceCount FlexibleString `json:"relatedInstanceCount,omitempty"`
-	BelongToSubMerchant  FlexibleString `json:"belongToSubMerchant,omitempty"`
+	BelongToSubMerchant  bool           `json:"belongToSubMerchant,omitempty"`
 	SubMerchantName      string         `json:"subMerchantName,omitempty"`
 	Remark               string         `json:"remark,omitempty"`
 	Raw                  RawObject      `json:"-"`
